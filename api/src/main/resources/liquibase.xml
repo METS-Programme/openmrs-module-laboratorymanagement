@@ -1491,8 +1491,11 @@
       SELECT '66bfa314-4881-11ef-9d0e-00155d78897e','Generator for Laboratory Barcode',null,(SELECT pit.patient_identifier_type_id FROM patient_identifier_type pit WHERE pit.uuid = '66bfa314-4881-11ef-9d0e-00155d78897e'),1,NOW(),0
     </sql>
   </changeSet>
-  <changeSet id="labmanagement-1719626186290-228" author="dev">
-    <preConditions onFail="MARK_RAN">
+  <changeSet id="labmanagement-1719626186290-228-revised" author="dev">
+    <preConditions onFail="MARK_RAN" onError="CONTINUE">
+      <and>
+        <tableExists tableName="idgen_seq_id_gen"/>
+      </and>
       <sqlCheck expectedResult="0">SELECT COUNT(*) FROM idgen_seq_id_gen WHERE id = (SELECT iis.id FROM idgen_identifier_source iis WHERE iis.uuid = '66bfa314-4881-11ef-9d0e-00155d78897e')</sqlCheck>
     </preConditions>
     <comment>Creating the Laboratory Specimen Barcode sequential definition</comment>
