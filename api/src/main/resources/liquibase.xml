@@ -1477,7 +1477,7 @@
     </insert>
   </changeSet>
   <changeSet id="labmanagement-1719626186290-227-revised" author="dev">
-    <preConditions onFail="MARK_RAN">
+    <preConditions onFail="MARK_RAN" onError="CONTINUE">
       <and>
         <tableExists tableName="idgen_identifier_source"/>
       </and>
