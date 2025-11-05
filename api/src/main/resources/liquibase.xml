@@ -1476,9 +1476,14 @@
       <column name="uuid">66bfa314-4881-11ef-9d0e-00155d78897e</column>
     </insert>
   </changeSet>
-  <changeSet id="labmanagement-1719626186290-227" author="dev">
+  <changeSet id="labmanagement-1719626186290-227-revised" author="dev">
     <preConditions onFail="MARK_RAN">
-      <sqlCheck expectedResult="0">SELECT COUNT(*) FROM idgen_identifier_source WHERE uuid = '66bfa314-4881-11ef-9d0e-00155d78897e'</sqlCheck>
+      <and>
+        <tableExists tableName="idgen_identifier_source"/>
+      </and>
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM idgen_identifier_source WHERE uuid = '66bfa314-4881-11ef-9d0e-00155d78897e'
+      </sqlCheck>
     </preConditions>
     <comment>Creating the Laboratory Specimen Barcode identifier source</comment>
     <sql>
