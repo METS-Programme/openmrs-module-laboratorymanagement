@@ -3,7 +3,7 @@
 
     <groupId>org.openmrs.module</groupId>
     <artifactId>labmanagement</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1</version>
     <packaging>pom</packaging>
     <name>Lab Management</name>
     <description>This module supports lab management workflow.</description>
@@ -13,7 +13,7 @@
         <connection>scm:git:https://github.com/METS-Programme/openmrs-module-laboratorymanagement.git</connection>
         <developerConnection>scm:git:git@github.com:METS-Programme/openmrs-module-laboratorymanagement.git</developerConnection>
         <url>https://github.com/METS-Programme/openmrs-module-laboratorymanagement</url>
-        <tag>HEAD</tag>
+        <tag>labmanagement-1.0.1</tag>
     </scm>
 
     <modules>
