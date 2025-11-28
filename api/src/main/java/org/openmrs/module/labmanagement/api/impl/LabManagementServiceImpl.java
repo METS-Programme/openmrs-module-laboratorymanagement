@@ -1413,6 +1413,11 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
         return result;
     }
 
+    public List<TestRequestItem> getTestRequestItemByOrder(Order  order) {
+       return dao.getTestRequestItemByOrder(order);
+    }
+
+
     public Result<TestRequestItemDTO> findTestRequestItems(TestRequestItemSearchFilter filter){
         Result<TestRequestItemDTO> result = dao.findTestRequestItems(filter);
         boolean setTestResults = filter.getIncludeTestResult();

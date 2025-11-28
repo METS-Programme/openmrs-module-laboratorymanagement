@@ -101,6 +101,11 @@ public class LabManagementDao extends DaoBase {
     public TestRequest getTestRequestByUuid(String uuid) {
         return (TestRequest) getSession().createCriteria(TestRequest.class).add(Restrictions.eq("uuid", uuid)).uniqueResult();
     }
+
+    public List<TestRequestItem> getTestRequestItemByOrder(Order order) {
+        return getSession().createCriteria(TestRequestItem.class).add(Restrictions.eq("order",order)).list();
+    }
+
     public List<TestRequestItem> getTestRequestItemsByTestRequestId(List<Integer> ids, boolean includeAll) {
         Criteria criteria =  getSession().createCriteria(TestRequestItem.class);
         criteria.add(Restrictions.in("testRequest.id", ids.toArray()));

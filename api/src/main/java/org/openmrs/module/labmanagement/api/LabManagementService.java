@@ -10,6 +10,7 @@
 package org.openmrs.module.labmanagement.api;
 
 import org.openmrs.Concept;
+import org.openmrs.Encounter;
 import org.openmrs.Order;
 import org.openmrs.annotation.Authorized;
 import org.openmrs.api.OpenmrsService;
@@ -129,6 +130,10 @@ public interface LabManagementService extends OpenmrsService {
     @Transactional(readOnly = true)
     @Authorized(Privileges.APP_LABMANAGEMENT_TESTREQUESTS)
     Result<TestRequestDTO> findTestRequests(TestRequestSearchFilter filter);
+
+    @Transactional(readOnly = true)
+    @Authorized(Privileges.APP_LABMANAGEMENT_TESTREQUESTS)
+   List<TestRequestItem> getTestRequestItemByOrder(Order order);
 
     @Transactional(readOnly = true)
     @Authorized(Privileges.APP_LABMANAGEMENT_TESTREQUESTS)

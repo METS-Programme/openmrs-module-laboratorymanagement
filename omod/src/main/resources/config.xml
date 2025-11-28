@@ -43,6 +43,11 @@
     </advice>
      /AOP -->
 
+    <advice>
+        <point>org.openmrs.api.OrderService</point>
+        <class>${project.parent.groupId}.${project.parent.artifactId}.advice.CreateTestRequestFromTestOrderAdvice</class>
+    </advice>
+
 
     <!-- Required Privileges
     <privilege>
