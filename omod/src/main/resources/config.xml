@@ -161,7 +161,7 @@
     </globalProperty>
     <globalProperty>
         <property>labmanagement.testGroupConcept</property>
-        <defaultValue>162384AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</defaultValue>
+        <defaultValue>3fae8c10-0f21-4b14-9914-000000199914</defaultValue>
         <description>Concept uuid for grouping tests.</description>
     </globalProperty>
     <globalProperty>
@@ -181,12 +181,12 @@
     </globalProperty>
     <globalProperty>
         <property>labmanagement.containerTypeConcept</property>
-        <defaultValue>bce2b1af-98b1-48a2-98a2-3e4ffb3c79c2</defaultValue>
+        <defaultValue>e5a81b8f-1998-4f94-a814-000199900000</defaultValue>
         <description>Concept UUID for laboratory container types</description>
     </globalProperty>
     <globalProperty>
         <property>labmanagement.volumeMeasurementTypeConcept</property>
-        <defaultValue>162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</defaultValue>
+        <defaultValue>e5a81b8f-1998-4f94-a814-000199900001</defaultValue>
         <description>Concept UUID for laboratory volume measurement types</description>
     </globalProperty>
     <globalProperty>
