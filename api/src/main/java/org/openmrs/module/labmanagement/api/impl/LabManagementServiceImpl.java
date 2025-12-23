@@ -3744,7 +3744,7 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
         else if(orderObs != null){
             testRequestItem.setStatus(TestRequestItemStatus.IN_PROGRESS);
         } else if(StringUtils.isBlank(order.getAccessionNumber())){
-            testRequestItem.setStatus(TestRequestItemStatus.SAMPLE_COLLECTION);
+            testRequestItem.setStatus(TestRequestItemStatus.REQUEST_APPROVAL);
         }else {
             testRequestItem.setStatus(TestRequestItemStatus.IN_PROGRESS);
         }
