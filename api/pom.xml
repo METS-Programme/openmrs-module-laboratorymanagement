@@ -35,11 +35,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.openmrs.module</groupId>
-            <artifactId>dataexchange-api</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.openmrs.test</groupId>
             <artifactId>openmrs-test</artifactId>
             <type>pom</type>

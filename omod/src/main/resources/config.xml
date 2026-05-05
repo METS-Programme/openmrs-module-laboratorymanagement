@@ -26,9 +26,6 @@
         <require_module>
             org.openmrs.module.patientqueueing
         </require_module>
-        <require_module>
-            org.openmrs.module.dataexchange
-        </require_module>
     </require_modules>
 
     <aware_of_modules>

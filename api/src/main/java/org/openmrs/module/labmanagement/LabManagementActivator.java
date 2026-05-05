@@ -34,7 +34,6 @@ public class LabManagementActivator extends BaseModuleActivator {
 		try{
 			List<StartupTask> startUpTasks = new ArrayList<>();
 			startUpTasks.add(new LocationTagsSynchronize());
-			startUpTasks.add(new DataImport());
 			startUpTasks.sort(Comparator.comparing(StartupTask::getPriority));
 
 			for(StartupTask task : startUpTasks){

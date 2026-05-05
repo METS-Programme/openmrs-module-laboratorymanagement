@@ -16,7 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
-import org.openmrs.api.UserService;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.hibernate.DbSessionFactory;
 import org.openmrs.module.labmanagement.api.LabManagementException;
@@ -26,11 +25,9 @@ import org.openmrs.module.labmanagement.api.impl.LabManagementServiceImpl;
 import org.openmrs.module.labmanagement.api.jobs.AsyncTasksBatchJob;
 import org.openmrs.module.labmanagement.api.jobs.TestConfigImportJob;
 import org.openmrs.module.labmanagement.api.model.*;
-import org.openmrs.module.labmanagement.api.reporting.ObsValue;
 import org.openmrs.module.labmanagement.api.utils.DateUtil;
 import org.openmrs.module.labmanagement.api.utils.GlobalProperties;
 import org.openmrs.module.labmanagement.api.utils.StringUtils;
-import org.openmrs.module.labmanagement.tasks.DataImport;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -2463,27 +2460,6 @@ tests	[…]
 		for(Obs encounterObs : encounterObss){
 			List<Obs> testResultObs = obsToVerify.stream().filter(p->p.getObsId().equals(encounterObs.getObsId())).collect(Collectors.toList());
 			Assert.assertEquals(testResultObs.size(), 1);
-		}
-	}
-
-	@Test
-	public void testParentChildRoleAssignments(){
-		DataImport dataImport = new DataImport();
-		UserService userService = Context.getUserService();
-		List<Role> roles = userService.getAllRoles();
-		Role roleWithChildren = roles.stream().filter(Role::hasChildRoles).findFirst().orElse(null);
-		if(roleWithChildren != null){
-			Role finalRoleWithChildren = roleWithChildren;
-			Role roleChild =	 roles.stream().filter(p-> !p.getName().equals(finalRoleWithChildren.getName()) &&
-					p.getAllParentRoles().stream().noneMatch(x -> x.getName().equals(finalRoleWithChildren.getName()))).findFirst().orElse(null);
-
-		 if(roleChild != null){
-			 dataImport.applyParentRoleAssignments(Context.getUserService(), roleChild.getName(),roleWithChildren.getName());
-		 }
-		}else if(roles.size() > 1){
-			roleWithChildren = roles.get(0);
-			Role roleChild = roles.get(1);
-			dataImport.applyParentRoleAssignments(Context.getUserService(), roleChild.getName(),roleWithChildren.getName());
 		}
 	}
 
