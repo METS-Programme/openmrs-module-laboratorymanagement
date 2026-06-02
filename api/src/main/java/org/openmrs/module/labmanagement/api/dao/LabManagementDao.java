@@ -13,6 +13,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.*;
 import org.hibernate.criterion.*;
@@ -37,6 +38,8 @@ import java.util.stream.Stream;
 
 @SuppressWarnings({ "unchecked" })
 public class LabManagementDao extends DaoBase {
+
+    private final Log log = LogFactory.getLog(this.getClass());
 
 
     public TestRequestItemSample getTestRequestItemSampleById(Integer id) {
@@ -2217,12 +2220,146 @@ public class LabManagementDao extends DaoBase {
     }
 
     public void updateOrderInstructions(Order order, String instructions){
+        if(order == null) {
+            log.warn("updateOrderInstructions: order is null, skipping update");
+            return;
+        }
+        if(order.getId() == null) {
+            log.warn("updateOrderInstructions: order.getId() is null, skipping update");
+            return;
+        }
+
         DbSession session = getSession();
-        Query query = session.createSQLQuery("UPDATE orders SET instructions = :insttxt WHERE order_id = :p");
-        query.setParameter("p", order);
-        query.setParameter("insttxt", instructions);
-        query.executeUpdate();
-        session.refresh(order);
+        try {
+            Query query = session.createSQLQuery("UPDATE orders SET instructions = :insttxt WHERE order_id = :p");
+            query.setParameter("p", order.getId());
+            query.setParameter("insttxt", instructions);
+
+            int rowsAffected = query.executeUpdate();
+            if(rowsAffected == 0) {
+                log.error("updateOrderInstructions: NO rows updated for order_id: " + order.getId() +
+                        ". Order may not exist in orders table.");
+            } else if(rowsAffected > 1) {
+                log.warn("updateOrderInstructions: Multiple rows (" + rowsAffected + ") updated for order_id: " + order.getId());
+            } else {
+                log.debug("updateOrderInstructions: Successfully updated instructions for order_id: " + order.getId());
+            }
+
+            session.refresh(order);
+        } catch (Exception e) {
+            log.error("updateOrderInstructions: Failed to update order_id: " + order.getId(), e);
+            throw e;
+        }
+    }
+
+    public void updateOrderSpecimen(Order order, Integer specimenConceptId){
+        if(order == null) {
+            log.warn("updateOrderSpecimen: order is null, skipping update");
+            return;
+        }
+        if(specimenConceptId == null) {
+            log.warn("updateOrderSpecimen: specimenConceptId is null, skipping update for order_id: " + order.getId());
+            return;
+        }
+        if(order.getId() == null) {
+            log.warn("updateOrderSpecimen: order.getId() is null, skipping update");
+            return;
+        }
+
+        DbSession session = getSession();
+        try {
+            Query query = session.createSQLQuery("UPDATE test_order SET specimen_source = :specimenId WHERE order_id = :orderId");
+            query.setParameter("orderId", order.getId());
+            query.setParameter("specimenId", specimenConceptId);
+
+            int rowsAffected = query.executeUpdate();
+            if(rowsAffected == 0) {
+                log.error("updateOrderSpecimen: NO rows updated for order_id: " + order.getId() +
+                        ". Order may not exist in test_order table.");
+            } else if(rowsAffected > 1) {
+                log.warn("updateOrderSpecimen: Multiple rows (" + rowsAffected + ") updated for order_id: " + order.getId());
+            } else {
+                log.debug("updateOrderSpecimen: Successfully updated specimen_source for order_id: " + order.getId());
+            }
+
+            session.refresh(order);
+        } catch (Exception e) {
+            log.error("updateOrderSpecimen: Failed to update order_id: " + order.getId(), e);
+            throw e;
+        }
+    }
+
+    public void updateOrderFulfillerStatusDirectly(Order order, String fulfillerStatus, String fulfillerComment, String accessionNumber){
+        updateOrderFulfillerStatusDirectly(order, fulfillerStatus, fulfillerComment, accessionNumber, null);
+    }
+
+    public void updateOrderFulfillerStatusDirectly(Order order, String fulfillerStatus, String fulfillerComment, String accessionNumber, String instructions){
+        if(order == null) {
+            log.warn("updateOrderFulfillerStatusDirectly: order is null, skipping update");
+            return;
+        }
+        if(order.getId() == null) {
+            log.warn("updateOrderFulfillerStatusDirectly: order.getId() is null, skipping update");
+            return;
+        }
+
+        DbSession session = getSession();
+        StringBuilder sqlBuilder = new StringBuilder("UPDATE orders SET ");
+
+        List<String> updates = new ArrayList<>();
+        if(fulfillerStatus != null){
+            updates.add("fulfiller_status = :fulfillerStatus");
+        }
+        if(fulfillerComment != null){
+            updates.add("fulfiller_comment = :fulfillerComment");
+        }
+        if(accessionNumber != null){
+            updates.add("accession_number = :accessionNumber");
+        }
+        if(instructions != null){
+            updates.add("instructions = :instructions");
+        }
+
+        if(updates.isEmpty()) {
+            log.warn("updateOrderFulfillerStatusDirectly: no updates to perform for order_id: " + order.getId());
+            return;
+        }
+
+        sqlBuilder.append(String.join(", ", updates));
+        sqlBuilder.append(" WHERE order_id = :orderId");
+
+        try {
+            Query query = session.createSQLQuery(sqlBuilder.toString());
+            query.setParameter("orderId", order.getId());
+
+            if(fulfillerStatus != null){
+                query.setParameter("fulfillerStatus", fulfillerStatus);
+            }
+            if(fulfillerComment != null){
+                query.setParameter("fulfillerComment", fulfillerComment);
+            }
+            if(accessionNumber != null){
+                query.setParameter("accessionNumber", accessionNumber);
+            }
+            if(instructions != null){
+                query.setParameter("instructions", instructions);
+            }
+
+            int rowsAffected = query.executeUpdate();
+            if(rowsAffected == 0) {
+                log.error("updateOrderFulfillerStatusDirectly: NO rows updated for order_id: " + order.getId() +
+                        ". Order may not exist in orders table. SQL: " + sqlBuilder);
+            } else if(rowsAffected > 1) {
+                log.warn("updateOrderFulfillerStatusDirectly: Multiple rows (" + rowsAffected + ") updated for order_id: " + order.getId());
+            } else {
+                log.debug("updateOrderFulfillerStatusDirectly: Successfully updated order_id: " + order.getId());
+            }
+
+            session.refresh(order);
+        } catch (Exception e) {
+            log.error("updateOrderFulfillerStatusDirectly: Failed to update order_id: " + order.getId(), e);
+            throw e;
+        }
     }
 
     public Result<WorksheetDTO> findWorksheets(WorksheetSearchFilter filter){

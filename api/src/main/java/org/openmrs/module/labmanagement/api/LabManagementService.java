@@ -195,6 +195,10 @@ public interface LabManagementService extends OpenmrsService {
     @Authorized(Privileges.TASK_LABMANAGEMENT_SAMPLES_COLLECT)
     void updateOrderInstructions(Map<Integer, String> orderInstructions);
 
+    @Transactional
+    @Authorized(Privileges.TASK_LABMANAGEMENT_SAMPLES_COLLECT)
+    void updateSpecimenSourceManually(Order order, String specimenSourceUUID);
+
     @Transactional(readOnly = true)
     @Authorized(Privileges.APP_LABMANAGEMENT_WORKSHEETS)
     Worksheet getWorksheetById(Integer id);

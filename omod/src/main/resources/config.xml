@@ -389,6 +389,14 @@
         <description>A worksheet should have all tests for the same test type to allow import of results.</description>
     </globalProperty>
 
+    <globalProperty>
+        <property>labmanagement.referralViewImplementation</property>
+        <defaultValue>simple</defaultValue>
+        <description>
+            Determines which referral view implementation to use in the laboratory module. 'simple' uses the UgandaEMR-style sync with better tracking of synced tests. 'advanced' uses the original esm-laboratory-management implementation.
+        </description>
+    </globalProperty>
+
     <!-- /Global Properties -->
 </module>
 

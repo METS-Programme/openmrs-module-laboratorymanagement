@@ -1097,7 +1097,7 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
             testRequestItem.setStatus(TestRequestItemStatus.REQUEST_APPROVAL);
         }else{
             if(testRequestDTO.getReferredIn()){
-                UpdateTestRequestItemInProgress(testRequestItem, testOrder);
+                updateTestRequestItemInProgress(testRequestItem, testOrder);
             }else if(!referredOut){
                 testRequestItem.setStatus(TestRequestItemStatus.SAMPLE_COLLECTION);
             }
@@ -1548,11 +1548,15 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
         return dao.saveTestRequestItem(testRequestItem);
     }
 
-    private void UpdateTestRequestReferredOut(TestRequestItem testRequestItem, Order order,  String accessionNumber){
-        UpdateTestRequestItemInProgress(testRequestItem, order, accessionNumber);
+    private void updateTestRequestReferredOut(TestRequestItem testRequestItem, Order order,  String accessionNumber){
         testRequestItem.setStatus(TestRequestItemStatus.REFERRED_OUT_LAB);
+        order.setFulfillerStatus(Order.FulfillerStatus.IN_PROGRESS);
+        order.setFulfillerComment("Referred out - to be processed");
+        if(StringUtils.isNotBlank(accessionNumber)){
+            order.setAccessionNumber(accessionNumber);
+        }
     }
-    private void UpdateTestRequestItemInProgress(TestRequestItem testRequestItem, Order order,  String accessionNumber){
+    private void updateTestRequestItemInProgress(TestRequestItem testRequestItem, Order order,  String accessionNumber){
         testRequestItem.setStatus(TestRequestItemStatus.IN_PROGRESS);
         order.setFulfillerStatus(Order.FulfillerStatus.IN_PROGRESS);
         order.setFulfillerComment("To be processed");
@@ -1560,11 +1564,11 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
             order.setAccessionNumber(accessionNumber);
         }
     }
-    private void UpdateTestRequestItemInProgress(TestRequestItem testRequestItem, Order order){
-        UpdateTestRequestItemInProgress(testRequestItem, order, null);
+    private void updateTestRequestItemInProgress(TestRequestItem testRequestItem, Order order){
+        updateTestRequestItemInProgress(testRequestItem, order, null);
     }
 
-    private void UpdateTestRequestItemRejected(TestRequestItem testRequestItem, Order order, String reason){
+    private void updateTestRequestItemRejected(TestRequestItem testRequestItem, Order order, String reason){
         testRequestItem.setStatus(TestRequestItemStatus.CANCELLED);
         order.setFulfillerStatus(Order.FulfillerStatus.DECLINED);
         order.setFulfillerComment(reason);
@@ -1638,8 +1642,9 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
             if(testRequestAction.getAction().equals(ApprovalResult.APPROVED)) {
                 if (testRequestItem.getTestRequest().getReferredIn() != null &&
                         testRequestItem.getTestRequest().getReferredIn().equals(Boolean.TRUE)) {
-                    UpdateTestRequestItemInProgress(testRequestItem, testRequestItem.getOrder());
-                    Context.getOrderService().updateOrderFulfillerStatus(testRequestItem.getOrder(), testRequestItem.getOrder().getFulfillerStatus(), testRequestItem.getOrder().getFulfillerComment());
+                    updateTestRequestItemInProgress(testRequestItem, testRequestItem.getOrder());
+                    updateOrderFulfillerStatusWithFallback(testRequestItem.getOrder(),
+                            testRequestItem.getOrder().getFulfillerStatus(), testRequestItem.getOrder().getFulfillerComment(), null);
                     List<Sample>  samples = dao.getSamplesByTestRequestItem(testRequestItem);
                     for(Sample sample : samples){
                         updateSampleForTesting(sample);
@@ -1649,7 +1654,7 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
                     testRequestItem.setStatus(TestRequestItemStatus.SAMPLE_COLLECTION);
                 }
             }else{
-                UpdateTestRequestItemRejected(testRequestItem, testRequestItem.getOrder(), remarks);
+                updateTestRequestItemRejected(testRequestItem, testRequestItem.getOrder(), remarks);
             }
             dao.saveTestRequestItem(testRequestItem);
         }
@@ -2381,14 +2386,16 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
     }
 
     private Map<Integer, String> internalReleaseForTesting(Map<String, Pair<TestRequestItem, Map<String, Sample>>> testRequestItemSamples) {
-        OrderService orderService = Context.getOrderService();
-
         Map<Integer, String> instructionUpdate = new HashMap<>();
         for(Map.Entry<String, Pair<TestRequestItem,Map<String,Sample>>> testRequestSamples : testRequestItemSamples.entrySet()){
             TestRequestItem testRequestItem = testRequestSamples.getValue().getValue1();
             Optional<Sample> referredOutSample = testRequestSamples.getValue().getValue2().values().stream()
                     .filter(Sample::getReferredOut)
                     .findFirst();
+            Order order = testRequestItem.getOrder();
+            Sample sampleForSpecimen;
+            String referralInstruction = null;
+
             if(referredOutSample.isPresent()){
                 testRequestItem.setReferredOut(true);
                 testRequestItem.setReferralToFacility(referredOutSample.get().getReferralToFacility());
@@ -2402,16 +2409,12 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
                 testRequestItem.setReferralOutOrigin(ReferralOutOrigin.Laboratory);
                 testRequestItem.setReferralOutSample(referredOutSample.get());
 
-                Order order = testRequestItem.getOrder();
-                order.getId();
-                UpdateTestRequestReferredOut(testRequestItem, order, referredOutSample.get().getAccessionNumber());
-                orderService.updateOrderFulfillerStatus(order,
-                        order.getFulfillerStatus(), order.getFulfillerComment(), order.getAccessionNumber());
-                instructionUpdate.put(order.getId(), "REFER TO "+referredOutSample.get().getReferralToFacility().getAcronym());
+                updateTestRequestReferredOut(testRequestItem, order, referredOutSample.get().getAccessionNumber());
+                referralInstruction = "REFER TO "+referredOutSample.get().getReferralToFacility().getAcronym();
+                instructionUpdate.put(order.getId(), referralInstruction);
+                sampleForSpecimen = referredOutSample.get();
             }else{
-
-               Optional<Sample> initialSample = testRequestSamples.getValue().getValue2().values().stream()
-                        .findFirst();
+                Sample initialSample = testRequestSamples.getValue().getValue2().values().stream().findFirst().get();
                 testRequestItem.setReferredOut(false);
                 testRequestItem.setReferralToFacility(null);
                 testRequestItem.setReferralOutDate(null);
@@ -2420,16 +2423,20 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
                 testRequestItem.setStatus(TestRequestItemStatus.IN_PROGRESS);
                 testRequestItem.setChangedBy(Context.getAuthenticatedUser());
                 testRequestItem.setDateChanged(new Date());
-                testRequestItem.setInitialSample(initialSample.get());
+                testRequestItem.setInitialSample(initialSample);
                 testRequestItem.setReferralOutOrigin(null);
                 testRequestItem.setReferralOutSample(null);
 
-                Order order = testRequestItem.getOrder();
-                order.getId();
-                UpdateTestRequestItemInProgress(testRequestItem, order, initialSample.get().getAccessionNumber());
-                orderService.updateOrderFulfillerStatus(order,
-                        order.getFulfillerStatus(), order.getFulfillerComment(), order.getAccessionNumber());
+                updateTestRequestItemInProgress(testRequestItem, order, initialSample.getAccessionNumber());
+                sampleForSpecimen = initialSample;
             }
+
+            updateOrderFulfillerStatusWithFallback(order,
+                    order.getFulfillerStatus(), order.getFulfillerComment(), order.getAccessionNumber(), referralInstruction);
+            if(sampleForSpecimen.getSampleType() != null){
+                updateSpecimenSourceManually(order, sampleForSpecimen.getSampleType().getUuid());
+            }
+
             dao.saveTestRequestItem(testRequestItem);
             for(Sample sample : testRequestSamples.getValue().getValue2().values()){
                 updateSampleForTesting(sample);
@@ -2457,6 +2464,31 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
                 dao.updateOrderInstructions(order, entry.getValue());
             }
         }
+    }
+
+    public void updateSpecimenSourceManually(Order order, String specimenSourceUUID){
+        if(order == null || StringUtils.isBlank(specimenSourceUUID)) return;
+        Concept specimenSource = Context.getConceptService().getConceptByUuid(specimenSourceUUID);
+        if(specimenSource != null) {
+            dao.updateOrderSpecimen(order, specimenSource.getConceptId());
+        }
+    }
+
+    /**
+     * Updates order fulfiller status directly via DAO to ensure reliable updates.
+     * Uses direct SQL update to bypass OpenMRS orderService issues.
+     */
+    private void updateOrderFulfillerStatusWithFallback(Order order, Order.FulfillerStatus fulfillerStatus, String fulfillerComment, String accessionNumber){
+        updateOrderFulfillerStatusWithFallback(order, fulfillerStatus, fulfillerComment, accessionNumber, null);
+    }
+
+    /**
+     * Updates order fulfiller status and instructions directly via DAO in a single SQL UPDATE.
+     * Uses direct SQL update to bypass OpenMRS orderService issues.
+     */
+    private void updateOrderFulfillerStatusWithFallback(Order order, Order.FulfillerStatus fulfillerStatus, String fulfillerComment, String accessionNumber, String instructions){
+        if(order == null) return;
+        dao.updateOrderFulfillerStatusDirectly(order, fulfillerStatus.name(), fulfillerComment, accessionNumber, instructions);
     }
 
     public Worksheet getWorksheetById(Integer id){
@@ -3422,8 +3454,9 @@ public class LabManagementServiceImpl extends BaseOpenmrsService implements LabM
         dao.saveTestRequestItem(testRequestItem);
         Order toReturn = null;
         if(testResult.getOrder() != null && ! Order.FulfillerStatus.COMPLETED.equals(testResult.getOrder().getFulfillerStatus())){
-            toReturn = Context.getOrderService().updateOrderFulfillerStatus(testResult.getOrder(),
-                    Order.FulfillerStatus.COMPLETED,testResult.getOrder().getFulfillerComment());
+            dao.updateOrderFulfillerStatusDirectly(testResult.getOrder(), Order.FulfillerStatus.COMPLETED.toString(),
+                    testResult.getOrder().getFulfillerComment(), null);
+            toReturn = testResult.getOrder();
         }
         if(sendAlert && testRequestItem.getTestRequest().getReferredIn() != null && !testRequestItem.getTestRequest().getReferredIn()) {
             Provider provider = testRequestItem.getTestRequest().getProvider();
