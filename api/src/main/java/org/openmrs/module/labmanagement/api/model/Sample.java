@@ -8,10 +8,8 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Set;
 
-import org.hibernate.search.annotations.DocumentId;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 
 @Entity(name = "labmanagement.Sample")
 @Table(name = "labmgmt_sample")
@@ -20,7 +18,6 @@ public class Sample extends BaseChangeableOpenmrsData implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "sample_id", nullable = false)
-    @DocumentId
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -50,15 +47,15 @@ public class Sample extends BaseChangeableOpenmrsData implements Serializable {
     private Integer containerCount;
 
     @Column(name = "accession_number")
-    @Field
+    @GenericField
     private String accessionNumber;
 
     @Column(name = "provided_ref")
-    @Field
+    @GenericField
     private String providedRef;
 
     @Column(name = "external_ref", length = 100)
-    @Field
+    @GenericField
     private String externalRef;
 
     @Column(name = "referred_out")

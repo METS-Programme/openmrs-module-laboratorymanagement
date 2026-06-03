@@ -30,7 +30,6 @@ import org.openmrs.module.labmanagement.api.utils.DateUtil;
 import org.openmrs.module.labmanagement.api.utils.GlobalProperties;
 import org.openmrs.module.patientqueueing.model.PatientQueue;
 import org.openmrs.util.OpenmrsUtil;
-import org.openmrs.api.db.hibernate.search.LuceneQuery;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -1598,41 +1597,35 @@ public class LabManagementDao extends DaoBase {
         return query;
     }
 
-    protected LuceneQuery<Sample> newSampleQuery(String referenceNumber, boolean includeAll) {
-        if (StringUtils.isBlank(referenceNumber)) {
-            return null;
-        }
-        StringBuilder query = new StringBuilder();
-        String barcodeQuery = LuceneQuery.escapeQuery(referenceNumber);
-        List tokenizedName = Arrays.asList(barcodeQuery.trim().split("\\+"));
-        query.append("((");
-        query.append(this.newSampleReferenceQuery(tokenizedName, barcodeQuery, true));
-        query.append(")^0.3 OR providerRef:(\"").append(barcodeQuery).append("\")^0.6)");
-
-        Class sampleClass = Sample.class;
-        Session session = getCurrentHibernateSession();
-        LuceneQuery<Sample> itemsQuery = LuceneQuery.newQuery(sampleClass, session, query.toString());
-        if (!includeAll) {
-            itemsQuery.include("voided", Boolean.valueOf(false));
-        }
-        return itemsQuery;
-    }
-
+    /**
+     * Search for sample reference numbers using HQL (simplified version without Hibernate Search)
+     * Note: This is a simplified version that searches for exact/partial matches
+     */
     public List<Integer> searchSampleReferenceNumbers(String text, boolean includeAll, int maxItems) {
-        LuceneQuery referenceNumberQuery = this.newSampleQuery(text, includeAll);
-        if (referenceNumberQuery == null) return new ArrayList<>();
-        List sampleIds = referenceNumberQuery.listProjection("id");
-        if (!sampleIds.isEmpty()) {
-            CollectionUtils.transform(sampleIds, new Transformer() {
-                public Object transform(Object input) {
-                    return ((Object[]) input)[0];
-                }
-            });
-            int maxSize = sampleIds.size() < maxItems ? sampleIds.size() : maxItems;
-            sampleIds = sampleIds.subList(0, maxSize);
-            return sampleIds;
+        if (StringUtils.isBlank(text)) {
+            return new ArrayList<>();
         }
-        return new ArrayList<>();
+
+        try {
+            StringBuilder hql = new StringBuilder();
+            hql.append("SELECT s.id FROM labmanagement.Sample s WHERE ");
+
+            if (includeAll) {
+                hql.append("(s.accessionNumber LIKE :text OR s.externalRef LIKE :text OR s.providedRef LIKE :text)");
+            } else {
+                hql.append("(s.accessionNumber LIKE :text OR s.externalRef LIKE :text OR s.providedRef LIKE :text) AND s.voided = false");
+            }
+
+            Query query = getSession().createQuery(hql.toString());
+            String searchText = text + "%"; // Starts with search
+            query.setParameter("text", searchText);
+            query.setMaxResults(maxItems);
+
+            return query.list();
+        } catch (Exception e) {
+            log.error("Error searching sample reference numbers", e);
+            return new ArrayList<>();
+        }
     }
 
     public Result<SampleDTO> findSamples(SampleSearchFilter filter){
@@ -1869,7 +1862,7 @@ public class LabManagementDao extends DaoBase {
             parameterList.put("voided", filter.getVoided());
         }
 
-        /*if(!StringUtils.isBlank(filter.getSearchText())){
+        if(!StringUtils.isBlank(filter.getSearchText())){
             StringBuilder textSearch=new StringBuilder();
             String q = filter.getSearchText().toLowerCase() + "%";
             String qLast = "%" + filter.getSearchText().toLowerCase() ;
@@ -1877,7 +1870,7 @@ public class LabManagementDao extends DaoBase {
             parameterList.putIfAbsent("qtxt", q);
             parameterList.putIfAbsent("qtxtl", qLast);
             appendFilter(hqlFilter, textSearch.toString());
-        }*/
+        }
 
         if (hqlFilter.length() > 0) {
             hqlQuery.append(" where ");
