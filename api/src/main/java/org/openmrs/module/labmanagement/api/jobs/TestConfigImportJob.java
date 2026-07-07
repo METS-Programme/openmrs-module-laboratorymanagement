@@ -1,6 +1,8 @@
 package org.openmrs.module.labmanagement.api.jobs;
 
-import liquibase.util.csv.opencsv.CSVReader;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVParserBuilder;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang.StringUtils;
@@ -350,7 +352,10 @@ public class TestConfigImportJob {
 
                     try (Reader streamReader = new InputStreamReader(bomInputStream, charset);
                          BufferedReader bufferedReader = new BufferedReader(streamReader);) {
-                    csvReader = new CSVReader(bufferedReader, ',', '\"', hasHeader ? 1 : 0);
+                    csvReader = new CSVReaderBuilder(bufferedReader).withCSVParser(new CSVParserBuilder().withSeparator(',').withQuoteChar('\"').build()).build();
+                    if (hasHeader) {
+                        csvReader.skip(1);
+                    }
                     String[] csvLine = null;
                     boolean processedPending = false;
                     Map<Integer, Object[]> list = new HashMap<>();

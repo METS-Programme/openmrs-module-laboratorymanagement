@@ -30,6 +30,9 @@ import org.openmrs.module.webservices.rest.web.response.IllegalRequestException;
 import org.openmrs.module.webservices.rest.web.response.ResourceDoesNotSupportOperationException;
 import org.openmrs.module.webservices.rest.web.response.ResponseException;
 import org.springframework.web.multipart.MultipartFile;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVParserBuilder;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -160,7 +163,7 @@ public class TestResultImportConfigResource extends ResourceBase<TestResultImpor
 
             try (Reader streamReader = new InputStreamReader(bomInputStream, charset);
                  BufferedReader bufferedReader = new BufferedReader(streamReader);) {
-                liquibase.util.csv.opencsv.CSVReader csvReader = new liquibase.util.csv.opencsv.CSVReader(bufferedReader, separator.charAt(0), quote.charAt(0), 0);
+                CSVReader csvReader = new CSVReaderBuilder(bufferedReader).withCSVParser(new CSVParserBuilder().withSeparator(separator.charAt(0)).withQuoteChar(quote.charAt(0)).build()).build();
                 if ((headers = csvReader.readNext()) == null) {
                     throw new IllegalRequestException("File has no headers");
                 }
@@ -322,7 +325,7 @@ public class TestResultImportConfigResource extends ResourceBase<TestResultImpor
 
             try (Reader streamReader = new InputStreamReader(bomInputStream, charset);
                  BufferedReader bufferedReader = new BufferedReader(streamReader);) {
-                liquibase.util.csv.opencsv.CSVReader csvReader = new liquibase.util.csv.opencsv.CSVReader(bufferedReader, separator.charAt(0), quote.charAt(0), 0);
+                CSVReader csvReader = new CSVReaderBuilder(bufferedReader).withCSVParser(new CSVParserBuilder().withSeparator(separator.charAt(0)).withQuoteChar(quote.charAt(0)).build()).build();
                 if ((headers = csvReader.readNext()) == null) {
                     throw new IllegalRequestException("File has no headers");
                 }

@@ -1,6 +1,8 @@
 package org.openmrs.module.labmanagement.api.reporting.impl;
 
-import liquibase.util.csv.opencsv.CSVReader;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVParserBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -170,7 +172,7 @@ public class SummarizedTurnAroundTimeReport extends ReportGenerator {
 				int testConceptId = 0;
 				int testName=1;
 				int tat = 2;
-				CSVReader csvReader = new CSVReader(reader, ',', '\"', 0);
+				CSVReader csvReader = new CSVReaderBuilder(reader).withCSVParser(new CSVParserBuilder().withSeparator(',').withQuoteChar('\"').build()).build();
 				String[] csvLine = null;
 				while ((csvLine = csvReader.readNext()) != null) {
 					Integer conceptId = Integer.parseInt(csvLine[testConceptId]);
